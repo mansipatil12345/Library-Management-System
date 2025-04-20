@@ -1,208 +1,144 @@
-import { useState } from 'react';
+import { useState, createContext, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUser, FiLock, FiMail, FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
 
-export default function AuthPage({ setIsAuthenticated }) {
-  const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: '',
-  });
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDsS_3eIhNQdK5zPXnjchxW-WUrZi6Gl7U",
+  authDomain: "library-51cd8.firebaseapp.com",
+  projectId: "library-51cd8",
+  storageBucket: "library-51cd8.appspot.com",
+  messagingSenderId: "142075073971",
+  appId: "1:142075073971:web:1bb9387910a2200ba5e7c6",
+  measurementId: "G-VFZCJJ884X"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+const AuthContext = createContext();
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          email: firebaseUser.email,
+          uid: firebaseUser.uid,
+          role: firebaseUser.email.includes('@admin') ? 'admin' : 'student'
+        });
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const login = async (email, password) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      setUser({
+        email: user.email,
+        uid: user.uid,
+        role: email.includes('@admin') ? 'admin' : 'student'
+      });
+      
+      toast.success('Login successful!');
+      
+      // Redirect based on role
+      if (email.includes('@admin')) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/student/home');
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error.code));
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      toast.error('Please fill in all fields');
-      return;
+  const register = async (name, email, password) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      setUser({
+        email: user.email,
+        uid: user.uid,
+        name,
+        role: 'student' // Default role for new registrations
+      });
+      
+      toast.success('Account created successfully!');
+      navigate('/student/home');
+    } catch (error) {
+      toast.error(getErrorMessage(error.code));
     }
+  };
 
-    if (!isLogin && !formData.name) {
-      toast.error('Please enter your name');
-      return;
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      navigate('/');
+      toast.success('Logged out successfully!');
+    } catch (error) {
+      toast.error('Failed to log out');
     }
+  };
 
-    // Simulate API call
-    setTimeout(() => {
-      // In a real app, you would verify credentials with your backend
-      localStorage.setItem('authToken', 'dummy-auth-token');
-      setIsAuthenticated(true);
-      toast.success(isLogin ? 'Login successful!' : 'Account created!');
-      navigate('/home');
-    }, 1000);
+  const getErrorMessage = (code) => {
+    switch (code) {
+      case 'auth/invalid-email':
+        return 'Invalid email address';
+      case 'auth/user-disabled':
+        return 'This account has been disabled';
+      case 'auth/user-not-found':
+        return 'No account found with this email';
+      case 'auth/wrong-password':
+        return 'Incorrect password';
+      case 'auth/email-already-in-use':
+        return 'Email already in use';
+      case 'auth/weak-password':
+        return 'Password should be at least 6 characters';
+      case 'auth/too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      default:
+        return 'Authentication failed. Please try again.';
+    }
+  };
+
+  const value = {
+    user,
+    loading,
+    login,
+    register,
+    logout
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-center">
-          <h1 className="text-2xl font-bold text-white">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
-          </h1>
-          <p className="text-blue-100 mt-1">
-            {isLogin ? 'Sign in to continue' : 'Join our digital library'}
-          </p>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setIsLogin(true)}
-            className={`flex-1 py-4 font-medium text-sm transition-all ${
-              isLogin
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => setIsLogin(false)}
-            className={`flex-1 py-4 font-medium text-sm transition-all ${
-              !isLogin
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {!isLogin && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Full Name</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiUser className="text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  placeholder="John Doe"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Email Address</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiMail className="text-gray-400" />
-              </div>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="your@email.com"
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Password</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiLock className="text-gray-400" />
-              </div>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder={isLogin ? 'Enter your password' : 'Create a password'}
-                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <FiEyeOff /> : <FiEye />}
-              </button>
-            </div>
-            {!isLogin && (
-              <p className="text-xs text-gray-500">
-                Use at least 8 characters with a mix of letters and numbers
-              </p>
-            )}
-          </div>
-
-          {isLogin && (
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">Remember me</span>
-              </label>
-              <a href="#" className="text-sm text-blue-600 hover:underline">
-                Forgot password?
-              </a>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="w-full flex items-center justify-center gap-2 mt-4 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
-          >
-            {isLogin ? 'Sign In' : 'Create Account'}
-            <FiArrowRight />
-          </button>
-        </form>
-
-        {/* Footer */}
-        <div className="px-6 pb-6 text-center text-sm text-gray-600">
-          {isLogin ? (
-            <>
-              Don't have an account?{' '}
-              <button
-                type="button"
-                onClick={() => setIsLogin(false)}
-                className="text-blue-600 hover:underline font-medium"
-              >
-                Sign up
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{' '}
-              <button
-                type="button"
-                onClick={() => setIsLogin(true)}
-                className="text-blue-600 hover:underline font-medium"
-              >
-                Sign in
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      <Toaster position="top-right" />
-    </div>
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
 }

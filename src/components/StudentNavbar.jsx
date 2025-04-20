@@ -24,11 +24,11 @@ function Navbar() {
   const profileRef = useRef(null);
 
   const navItems = [
-    { path: '/home', label: 'Home', icon: <FiHome /> },
-    { path: '/books', label: 'Books', icon: <FiBook /> },
-    { path: '/research-papers', label: 'Research Papers', icon: <FiFileText /> },
-    { path: '/question-papers', label: 'Question Papers', icon: <FiFileText /> },
-    { path: '/my-library', label: 'My Library', icon: <FiClock /> },
+    { path: '/student/home', label: 'Home', icon: <FiHome /> },
+    { path: '/student/books', label: 'Books', icon: <FiBook /> },
+    { path: '/student/research-papers', label: 'Research Papers', icon: <FiFileText /> },
+    { path: '/student/question-papers', label: 'Question Papers', icon: <FiFileText /> },
+    { path: '/student/my-library', label: 'My Library', icon: <FiClock /> },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -36,7 +36,7 @@ function Navbar() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+      navigate(`/student/search?q=${encodeURIComponent(searchQuery)}`);
       setSearchQuery('');
       setIsOpen(false);
     }
@@ -72,7 +72,7 @@ function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <Link to="/home" className="flex items-center gap-2">
+            <Link to="/student/home" className="flex items-center gap-2">
               <span className="text-xl font-bold text-white">DigitalLib</span>
               <span className="hidden md:inline text-sm text-blue-100">University Library</span>
             </Link>
@@ -110,7 +110,7 @@ function Navbar() {
             
             <div className="flex items-center space-x-3 ml-2">
               <Link 
-                to="/notifications" 
+                to="/student/notifications" 
                 className="relative p-2 text-blue-100 hover:text-white rounded-full hover:bg-blue-700/20 transition-colors"
               >
                 <FiBell size={20} />
@@ -131,7 +131,7 @@ function Navbar() {
                 {profileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                     <Link
-                      to="/profile"
+                      to="/student/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
                       onClick={() => setProfileOpen(false)}
                     >
@@ -139,7 +139,7 @@ function Navbar() {
                       Profile
                     </Link>
                     <Link
-                      to="/settings"
+                      to="/student/settings"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2"
                       onClick={() => setProfileOpen(false)}
                     >
@@ -162,7 +162,7 @@ function Navbar() {
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-3">
             <Link 
-              to="/notifications" 
+              to="/student/notifications" 
               className="relative p-2 text-blue-100 hover:text-white rounded-full hover:bg-blue-700/20"
             >
               <FiBell size={20} />
@@ -212,7 +212,7 @@ function Navbar() {
               
               <div className="pt-2 border-t border-blue-600">
                 <Link
-                  to="/profile"
+                  to="/student/profile"
                   className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium text-blue-100 hover:text-white hover:bg-blue-700/20"
                 >
                   <FiUser size={20} />
