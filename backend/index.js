@@ -1,44 +1,38 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
-
 const app = express();
+const pool = require('./db');
+require('dotenv').config();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Database pool
-const pool = require('./db');
+// Routes
+const bookRoutes = require('./routes/books');
+const loanRoutes = require('./routes/loans');
+const memberRoutes = require('./routes/members');
+const fineRoutes = require('./routes/fines'); // ✅ this is critical
 
-// Import routes
-const booksRoute = require('./routes/books');
-const loansRoute = require('./routes/loans');
-// Later: const membersRoute = require('./routes/members');
-// Later: const finesRoute = require('./routes/fines');
+// Route mounting
+app.use('/api/books', bookRoutes);
+app.use('/api/loans', loanRoutes);
+app.use('/api/members', memberRoutes);
+app.use('/api/fines', fineRoutes); // ✅ mount fines here
 
-// Use routes
-app.use('/api/books', booksRoute);
-app.use('/api/loans', loansRoute);
-// app.use('/api/members', membersRoute); // uncomment when created
-// app.use('/api/fines', finesRoute);     // uncomment when created
-
-// Root route
+// Sanity check
 app.get('/', (req, res) => {
-  res.send('📚 Library Management API is running!');
+  res.send('📚 LMS Backend API is live!');
 });
 
-// Test DB connection on startup
-pool.query('SELECT NOW()', (err, resDb) => {
-  if (err) {
-    console.error('❌ PostgreSQL connection failed:', err.message);
-  } else {
-    console.log(`✅ Connected to PostgreSQL at: ${resDb.rows[0].now}`);
-  }
-});
-
-// Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+
+app.listen(PORT, async () => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    console.log(`✅ Connected to PostgreSQL at: ${result.rows[0].now}`);
+    console.log(`🚀 Server running on port ${PORT}`);
+  } catch (err) {
+    console.error('❌ DB connection failed:', err.message);
+  }
 });
