@@ -55,6 +55,9 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   const { user, isLoading } = useAuth();
   const [error, setError] = useState(null);
 
+  // ✅ DEBUG LOG
+  console.log("Current user (for debug):", user);
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
@@ -77,6 +80,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     </Suspense>
   );
 };
+
 
 // Layout Wrapper
 const LayoutWrapper = ({ children }) => {

@@ -1,43 +1,75 @@
-import { FiBook, FiUsers, FiAlertCircle, FiBarChart2, FiCalendar, FiClock, FiDollarSign, FiSettings, FiUser, FiPlusCircle, FiDatabase } from 'react-icons/fi';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { 
+  FiBook, FiUsers, FiAlertCircle, FiBarChart2, FiCalendar, FiClock, 
+  FiDollarSign, FiSettings, FiUser, FiPlusCircle, FiDatabase 
+} from 'react-icons/fi';
 
 export default function Dashboard() {
-  // Sample data - replace with API calls in production
-  const stats = [
+  const [stats, setStats] = useState({
+    books: 0,
+    users: 0,
+    fines: 0,
+    overdue: 0,
+  });
+
+  const [activities, setActivities] = useState([]);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const booksRes = await axios.get('http://localhost:5000/api/books');
+        const usersRes = await axios.get('http://localhost:5000/api/members');
+        const finesRes = await axios.get('http://localhost:5000/api/fines');
+        const activitiesRes = await axios.get('http://localhost:5000/api/activities');
+
+        const totalFines = finesRes.data.reduce((sum, fine) => sum + parseFloat(fine.fine_amount), 0);
+
+        setStats({
+          books: booksRes.data.length,
+          users: usersRes.data.length,
+          fines: totalFines,
+          overdue: 47, // You can make this dynamic if needed
+        });
+
+        setActivities(activitiesRes.data);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    }
+
+    fetchStats();
+  }, []);
+
+  const statsArray = [
     { 
       icon: <FiBook className="text-2xl" />,
-      title: 'Total Books', 
-      value: '2,458',
+      title: 'Total Books',
+      value: stats.books,
       change: '+12% this month',
       color: 'from-blue-100 to-blue-50 text-blue-800'
     },
     { 
       icon: <FiUsers className="text-2xl" />,
-      title: 'Active Users', 
-      value: '1,892',
+      title: 'Active Users',
+      value: stats.users,
       change: '+5% this week',
       color: 'from-green-100 to-green-50 text-green-800'
     },
     { 
       icon: <FiAlertCircle className="text-2xl" />,
-      title: 'Overdue Items', 
-      value: '47',
+      title: 'Overdue Items',
+      value: stats.overdue,
       change: '3 critical',
       color: 'from-yellow-100 to-yellow-50 text-yellow-800'
     },
     { 
       icon: <FiDollarSign className="text-2xl" />,
-      title: 'Fines Collected', 
-      value: '₹8,950',
+      title: 'Fines Collected',
+      value: `₹${stats.fines}`,
       change: 'This month',
       color: 'from-purple-100 to-purple-50 text-purple-800'
     }
-  ];
-
-  const recentActivities = [
-    { id: 1, user: 'Rahul Sharma', action: 'Borrowed "Clean Code"', time: '10 mins ago', icon: <FiBook /> },
-    { id: 2, user: 'Priya Patel', action: 'Returned late (+3 days)', time: '25 mins ago', icon: <FiClock /> },
-    { id: 3, user: 'System', action: 'Added 15 new research papers', time: '2 hours ago', icon: <FiDatabase /> },
-    { id: 4, user: 'Amit Singh', action: 'Paid ₹250 fine', time: '5 hours ago', icon: <FiDollarSign /> }
   ];
 
   const quickActions = [
@@ -67,7 +99,7 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        {stats.map((stat, index) => (
+        {statsArray.map((stat, index) => (
           <div key={index} className={`bg-gradient-to-br ${stat.color} p-5 rounded-2xl shadow-sm border border-gray-200/50`}>
             <div className="flex justify-between">
               <div>
@@ -118,15 +150,17 @@ export default function Dashboard() {
             <span>Recent Activities</span>
           </h2>
           <div className="space-y-4">
-            {recentActivities.map(activity => (
+            {activities.map(activity => (
               <div key={activity.id} className="flex items-start p-4 hover:bg-gray-50 rounded-lg transition-all">
                 <div className="p-2 bg-blue-100 text-blue-600 rounded-full mr-4">
-                  {activity.icon}
+                  <FiBook />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline gap-2">
-                    <h3 className="font-medium text-gray-800 truncate">{activity.user}</h3>
-                    <span className="text-xs text-gray-500 whitespace-nowrap">{activity.time}</span>
+                    <h3 className="font-medium text-gray-800 truncate">{activity.user_name}</h3>
+                    <span className="text-xs text-gray-500 whitespace-nowrap">
+                      {new Date(activity.timestamp).toLocaleTimeString()}
+                    </span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1 truncate">{activity.action}</p>
                 </div>
@@ -150,9 +184,9 @@ export default function Dashboard() {
             <h3 className="font-medium text-gray-800 mb-3">Book Inventory</h3>
             <div className="space-y-2">
               {[
-                { label: 'Available', value: '1,842', color: 'bg-blue-500' },
-                { label: 'Checked Out', value: '616', color: 'bg-green-500' },
-                { label: 'Reserved', value: '189', color: 'bg-yellow-500' }
+                { label: 'Available', value: '1,842' },
+                { label: 'Checked Out', value: '616' },
+                { label: 'Reserved', value: '189' }
               ].map((item, index) => (
                 <div key={index} className="flex justify-between items-center text-sm">
                   <span className="text-gray-600">{item.label}</span>

@@ -85,22 +85,34 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ✏️ UPDATE a book
+// ✏️ UPDATE a book (and its authors)
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { title, category_id, publication_date, copies_owned } = req.body;
+  const { title, category_id, publication_date, copies_owned, author_ids } = req.body;
 
   try {
+    // Update book details
     await pool.query(
       `UPDATE book SET title=$1, category_id=$2, publication_date=$3, copies_owned=$4
        WHERE id=$5`,
       [title, category_id, publication_date, copies_owned, id]
     );
 
-    res.json({ message: 'Book updated' });
+    // Remove existing authors from book_author
+    await pool.query(`DELETE FROM book_author WHERE book_id = $1`, [id]);
+
+    // Re-insert new authors
+    for (let author_id of author_ids) {
+      await pool.query(
+        `INSERT INTO book_author (book_id, author_id) VALUES ($1, $2)`,
+        [id, author_id]
+      );
+    }
+
+    res.json({ message: 'Book updated successfully' });
   } catch (err) {
     console.error('Error updating book:', err.message);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Failed to update book' });
   }
 });
 

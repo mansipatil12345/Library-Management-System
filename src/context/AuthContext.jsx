@@ -38,7 +38,7 @@ export function AuthProvider({ children }) {
         setUser({
           email: firebaseUser.email,
           uid: firebaseUser.uid,
-          role: firebaseUser.email.includes('@admin') ? 'admin' : 'student'
+          role: 'admin' // ✅ Temporarily force admin
         });
       } else {
         setUser(null);
@@ -57,13 +57,14 @@ export function AuthProvider({ children }) {
       setUser({
         email: user.email,
         uid: user.uid,
-        role: email.includes('@admin') ? 'admin' : 'student'
+        //role: email.includes('@admin') ? 'admin' : 'student'
+        role: 'admin' // ✅ Temporarily force admin  // changes to be done in firebase set role='admin' (manually everytime)to make any user as admin to fetch admin routes ,otherwise by default new user will be set to role as student 
       });
       
       toast.success('Login successful!');
       
       // Redirect based on role
-      if (email.includes('@admin')) {
+      if ('admin' === 'admin') { // Always true here
         navigate('/admin/dashboard');
       } else {
         navigate('/student/home');
@@ -82,11 +83,12 @@ export function AuthProvider({ children }) {
         email: user.email,
         uid: user.uid,
         name,
-        role: 'student' // Default role for new registrations
+        //role: email.includes('@admin') ? 'admin' : 'student'
+        role: 'admin' // ✅ Temporarily force admin  // changes to be done in firebase set role='admin' (manually everytime)to make any user as admin to fetch admin routes ,otherwise by default new user will be set to role as student 
       });
       
       toast.success('Account created successfully!');
-      navigate('/student/home');
+      navigate('/admin/dashboard');
     } catch (error) {
       toast.error(getErrorMessage(error.code));
     }
