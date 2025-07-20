@@ -116,11 +116,31 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// ❌ DELETE a book (and its authors from junction table)
+// Your existing Express book router file (e.g., routes/book.js)
+
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Check if any reservations exist
+    const reservationResult = await pool.query(
+      `SELECT * FROM reservation WHERE book_id = $1`,
+      [id]
+    );
+
+    if (reservationResult.rows.length > 0) {
+      // Mark the book as inactive
+      await pool.query(
+        `UPDATE book SET status = 'inactive' WHERE id = $1`,
+        [id]
+      );
+
+      return res.status(400).json({
+        message: 'Book has active reservations. Marked as inactive instead of deleting.'
+      });
+    }
+
+    // No reservations, delete authors link first
     await pool.query(`DELETE FROM book_author WHERE book_id = $1`, [id]);
     await pool.query(`DELETE FROM book WHERE id = $1`, [id]);
 

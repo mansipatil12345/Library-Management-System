@@ -62,6 +62,35 @@ export default function AdminBooks() {
     return matchesSearch && matchesCategory;
   });
 
+  const handleExport = () => {
+    if (filteredBooks.length === 0) {
+      toast.error("No books to export");
+      return;
+    }
+
+    const csvHeader = ["Title", "Authors", "Category", "Publication Date", "Copies Owned"];
+    const csvRows = filteredBooks.map((book) => [
+      `"${book.title}"`,
+      `"${book.authors.join(", ")}"`,
+      `"${book.category_name}"`,
+      `"${book.publication_date}"`,
+      `"${book.copies_owned}"`,
+    ]);
+
+    const csvContent = [csvHeader, ...csvRows]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "library_books_export.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const processedAuthorIds = formData.authorIdsInput
@@ -74,10 +103,7 @@ export default function AdminBooks() {
     try {
       const finalData = { ...formData, author_ids: processedAuthorIds };
       if (isEdit) {
-        await axios.put(
-          `http://localhost:5000/api/books/${editBookId}`,
-          finalData
-        );
+        await axios.put(`http://localhost:5000/api/books/${editBookId}`, finalData);
         toast.success("Book updated successfully");
       } else {
         await axios.post("http://localhost:5000/api/books", finalData);
@@ -158,7 +184,10 @@ export default function AdminBooks() {
             </select>
           </div>
 
-          <button className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all">
+          <button
+            onClick={handleExport}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all"
+          >
             <FiDownload size={18} />
             Export
           </button>
@@ -170,24 +199,12 @@ export default function AdminBooks() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Authors
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Published
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Copies
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Authors</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Published</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Copies</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -195,26 +212,18 @@ export default function AdminBooks() {
                 filteredBooks.map((book) => (
                   <tr key={book.book_id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {book.title}
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{book.title}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {book.authors.join(", ")}
-                      </div>
+                      <div className="text-sm text-gray-500">{book.authors.join(", ")}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                         {book.category_name}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {book.publication_date}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {book.copies_owned}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.publication_date}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.copies_owned}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
                         <button
@@ -226,9 +235,7 @@ export default function AdminBooks() {
                               copies_owned: book.copies_owned,
                               category_id: book.category_id || "",
                               author_ids: book.author_ids || [],
-                              authorIdsInput: book.author_ids
-                                ? book.author_ids.join(", ")
-                                : "",
+                              authorIdsInput: book.author_ids ? book.author_ids.join(", ") : "",
                             });
                             setIsEdit(true);
                             setEditBookId(book.book_id);
@@ -241,14 +248,16 @@ export default function AdminBooks() {
                           className="text-red-600 hover:text-red-900"
                           onClick={async () => {
                             try {
-                              await axios.delete(
-                                `http://localhost:5000/api/books/${book.book_id}`
-                              );
-                              toast.success("Book deleted successfully");
+                              const res = await axios.delete(`http://localhost:5000/api/books/${book.book_id}`);
+                              toast.success(res.data.message);
                               fetchBooks();
                             } catch (error) {
                               console.error("Error deleting book:", error);
-                              toast.error("Failed to delete book");
+                              if (error.response && error.response.data && error.response.data.message) {
+                                toast.error(error.response.data.message);
+                              } else {
+                                toast.error("Failed to delete book");
+                              }
                             }
                           }}
                         >
@@ -260,10 +269,7 @@ export default function AdminBooks() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-4 text-center text-sm text-gray-500"
-                  >
+                  <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
                     No books found matching your criteria
                   </td>
                 </tr>
@@ -276,17 +282,13 @@ export default function AdminBooks() {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
-            <h2 className="text-xl font-bold mb-4">
-              {isEdit ? "Edit Book" : "Add New Book"}
-            </h2>
+            <h2 className="text-xl font-bold mb-4">{isEdit ? "Edit Book" : "Add New Book"}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <input
                 type="text"
                 placeholder="Title"
                 value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="w-full border p-2 rounded"
                 required
               />
@@ -294,53 +296,35 @@ export default function AdminBooks() {
                 type="date"
                 placeholder="Publication Date"
                 value={formData.publication_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, publication_date: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, publication_date: e.target.value })}
                 className="w-full border p-2 rounded"
               />
               <input
                 type="number"
                 placeholder="Copies Owned"
                 value={formData.copies_owned}
-                onChange={(e) =>
-                  setFormData({ ...formData, copies_owned: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, copies_owned: e.target.value })}
                 className="w-full border p-2 rounded"
               />
               <input
                 type="number"
                 placeholder="Category ID"
                 value={formData.category_id}
-                onChange={(e) =>
-                  setFormData({ ...formData, category_id: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                 className="w-full border p-2 rounded"
               />
               <input
                 type="text"
                 placeholder="Author IDs (comma separated)"
                 value={formData.authorIdsInput}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    authorIdsInput: e.target.value,
-                  })
-                }
+                onChange={(e) => setFormData({ ...formData, authorIdsInput: e.target.value })}
                 className="w-full border p-2 rounded"
               />
               <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-gray-300 rounded"
-                >
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 bg-gray-300 rounded">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded"
-                >
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
                   {isEdit ? "Update" : "Add"}
                 </button>
               </div>
